@@ -61,7 +61,6 @@ export const StockCounter = () => {
           });
         
         console.log('Processed items:', items);
-        
         setInventory(items);
         toast.success(`Imported ${items.length} items from ${file.name}`);
       },
@@ -148,10 +147,10 @@ export const StockCounter = () => {
         <Card className="bg-gradient-wine text-wine-champagne shadow-wine">
           <CardHeader>
             <CardTitle className="text-3xl font-bold text-center">
-              🍷 Wine Inventory Assistant 🍷
+              🍷 Wine Inventory Voice Assistant
             </CardTitle>
             <p className="text-center text-wine-champagne/90">
-              Speak your stock count and I'll update your inventory in real-time
+              Speak your stock count naturally - I'll update your inventory in real-time
             </p>
           </CardHeader>
         </Card>
@@ -247,23 +246,11 @@ export const StockCounter = () => {
         />
 
         {/* Inventory Table */}
-        {inventory.length > 0 && (
+        {(inventory.length > 0 || isListening) && (
           <InventoryTable
             inventory={inventory}
             onUpdateItem={updateInventoryItem}
           />
-        )}
-
-        {inventory.length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <div className="text-muted-foreground">
-                <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">Ready to Begin</p>
-                <p>Import a CSV file or start speaking to create a new file with inventory items</p>
-              </div>
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>

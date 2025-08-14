@@ -80,8 +80,6 @@ export const InventoryTable = ({ inventory, onUpdateItem }: InventoryTableProps)
               <TableRow className="border-wine-gold/20">
                 <TableHead className="text-wine-burgundy font-semibold">Wine Name</TableHead>
                 <TableHead className="text-wine-burgundy font-semibold text-center">Count</TableHead>
-                <TableHead className="text-wine-burgundy font-semibold">Category</TableHead>
-                <TableHead className="text-wine-burgundy font-semibold">Notes</TableHead>
                 <TableHead className="text-wine-burgundy font-semibold text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -114,16 +112,6 @@ export const InventoryTable = ({ inventory, onUpdateItem }: InventoryTableProps)
                         {item.count}
                       </Badge>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground text-sm">
-                      {item.category || "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground text-sm">
-                      {item.notes || "—"}
-                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     {editingId === item.id ? (

@@ -13,10 +13,6 @@ interface VoiceControllerProps {
   onActiveChange: (active: boolean) => void;
 }
 
-interface RecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
 
 export const VoiceController = ({ onVoiceUpdate, isActive, onActiveChange }: VoiceControllerProps) => {
   const [isListening, setIsListening] = useState(false);
@@ -24,10 +20,10 @@ export const VoiceController = ({ onVoiceUpdate, isActive, onActiveChange }: Voi
   const [transcript, setTranscript] = useState("");
   const [confidence, setConfidence] = useState(0);
   const [currentItem, setCurrentItem] = useState("");
-  const [lastProcessed, setLastProcessed] = useState("");
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const isProcessingRef = useRef(false);
+  const lastProcessedRef = useRef("");
 
   // Initialize speech recognition
   useEffect(() => {
@@ -95,9 +91,10 @@ export const VoiceController = ({ onVoiceUpdate, isActive, onActiveChange }: Voi
       const fullTranscript = finalTranscript || interimTranscript;
       setTranscript(fullTranscript);
       
-      if (finalTranscript && finalTranscript.trim() !== lastProcessed) {
-        processVoiceInput(finalTranscript.trim());
-        setLastProcessed(finalTranscript.trim());
+      if (finalTranscript && finalTranscript.trim() !== lastProcessedRef.current) {
+        const processed = finalTranscript.trim();
+        processVoiceInput(processed);
+        lastProcessedRef.current = processed;
       }
     };
 
@@ -108,20 +105,23 @@ export const VoiceController = ({ onVoiceUpdate, isActive, onActiveChange }: Voi
         recognitionRef.current.abort();
       }
     };
-  }, [isActive, isPaused, lastProcessed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [isActive, isPaused]);
 
   const processVoiceInput = useCallback((text: string) => {
     if (isProcessingRef.current) return;
     isProcessingRef.current = true;
 
     try {
-      // Extract item names and counts using regex patterns
-      const patterns = [
+      const cleanedText = text
+            .replace(/[.,!?]/g, "")
+            .replace(/\bbottles?\b/gi, "")
+            .trim();      
+          // Extract item names and counts using regex patterns
+          const patterns = [
         // Pattern: "Chardonnay 12" or "Chardonnay twelve"
-        /^(.+?)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|\d+)$/i,
-        // Pattern: "12 bottles of Chardonnay" or "twelve bottles of Chardonnay"
-        /^(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|\d+)\s+(?:bottles?\s+of\s+)?(.+)$/i,
-        // Pattern: "count 5 for Merlot"
+        /^(.+?)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)$/i,        // Pattern: "12 bottles of Chardonnay" or "twelve bottles of Chardonnay"
+        /^(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\s+(?:bottles?\s+of\s+)?(.+)$/i,        // Pattern: "count 5 for Merlot"
         /^count\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|\d+)\s+(?:for\s+)?(.+)$/i,
       ];
 
@@ -141,7 +141,7 @@ export const VoiceController = ({ onVoiceUpdate, isActive, onActiveChange }: Voi
       let count = 0;
 
       for (const pattern of patterns) {
-        const match = text.match(pattern);
+        const match = cleanedText.match(pattern);
         if (match) {
           if (pattern.source.startsWith('^(.+?)')) {
             // First pattern: item name first

@@ -34,20 +34,15 @@ export const StockCounter = () => {
     
     Papa.parse(file, {
       header: true,
+      skipEmptyLines: true,
       complete: (results) => {
-        console.log('CSV parsing results:', results);
-        console.log('Raw CSV data:', results.data);
-        console.log('CSV headers detected:', results.meta?.fields);
-        
-        const items: InventoryItem[] = results.data
-          .filter((row: any) => {
-            console.log('Processing row:', row);
+        let items: InventoryItem[] = results.data
+            .filter((row: Record<string, unknown>) => {     
             // Try multiple possible column names for wine name
             const wineName = row.name || row.Name || row.wine || row.Wine || row['Wine Name'] || row['wine name'];
             return wineName && wineName.toString().trim() !== "";
           })
-          .map((row: any, index) => {
-            // Try multiple possible column names
+            .map((row: Record<string, unknown>, index) => {
             const wineName = row.name || row.Name || row.wine || row.Wine || row['Wine Name'] || row['wine name'];
             const wineCount = row.count || row.Count || row.quantity || row.Quantity || row.stock || row.Stock || 0;
             
@@ -60,9 +55,36 @@ export const StockCounter = () => {
             };
           });
         
-        console.log('Processed items:', items);
-        setInventory(items);
-        toast.success(`Imported ${items.length} items from ${file.name}`);
+        // Fallback for CSV files without headers (single column of names)
+        if (items.length === 0) {
+          Papa.parse(file, {
+            header: false,
+            skipEmptyLines: true,
+            complete: (noHeaderResults) => {
+                items = (noHeaderResults.data as unknown[])
+                  .map((row, index) => {
+                    const [name, count] = Array.isArray(row) ? row : Object.values(row as Record<string, unknown>);
+                  return {
+                    id: `item-${index}`,
+                    name: name?.toString().trim() || "",
+                    count: parseInt(count as string) || 0,
+                    category: "",
+                    notes: ""
+                  };
+                })
+                .filter(item => item.name !== "");
+
+              setInventory(items);
+              toast.success(`Imported ${items.length} items from ${file.name}`);
+            },
+            error: (error) => {
+              toast.error(`Error importing file: ${error.message}`);
+            }
+          });
+        } else {
+          setInventory(items);
+          toast.success(`Imported ${items.length} items from ${file.name}`);
+        }
       },
       error: (error) => {
         toast.error(`Error importing file: ${error.message}`);
@@ -71,6 +93,7 @@ export const StockCounter = () => {
   }, []);
 
   const updateInventoryItem = useCallback((itemName: string, count: number) => {
+    let newTotal = count;
     setInventory(prev => {
       const existingIndex = prev.findIndex(
         item => item.name.toLowerCase() === itemName.toLowerCase()
@@ -78,7 +101,11 @@ export const StockCounter = () => {
       
       if (existingIndex >= 0) {
         const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], count };
+          newTotal = updated[existingIndex].count + count;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          count: newTotal,
+        };
         return updated;
       } else {
         // Add new item
@@ -92,11 +119,12 @@ export const StockCounter = () => {
         return [...prev, newItem];
       }
     });
+    return newTotal;
   }, []);
 
   const handleVoiceUpdate = useCallback((itemName: string, count: number) => {
-    updateInventoryItem(itemName, count);
-    toast.success(`Updated ${itemName}: ${count}`, {
+    const total = updateInventoryItem(itemName, count);
+    toast.success(`Updated ${itemName}: ${total}`, {
       duration: 2000,
     });
   }, [updateInventoryItem]);
@@ -147,10 +175,10 @@ export const StockCounter = () => {
         <Card className="bg-gradient-wine text-wine-champagne shadow-wine">
           <CardHeader>
             <CardTitle className="text-3xl font-bold text-center">
-              🍷 Wine Inventory Voice Assistant
+              🍷 Wine Inventory Assistant 🍷
             </CardTitle>
             <p className="text-center text-wine-champagne/90">
-              Speak your stock count naturally - I'll update your inventory in real-time
+              Speak your stock count and I'll update your inventory in real-time
             </p>
           </CardHeader>
         </Card>
@@ -217,14 +245,14 @@ export const StockCounter = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button
+              {/* <Button
                 onClick={saveStockCount}
                 variant="secondary"
                 className="w-full"
                 disabled={inventory.length === 0}
               >
                 Save Stock Count
-              </Button>
+              </Button> */}
               <Button
                 onClick={exportToCSV}
                 variant="outline"

@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from "react";
-import { Calendar, Upload, Download, Save, Mic, MicOff, Pause } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Calendar, Upload, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,26 @@ export const StockCounter = () => {
   );
   const [isListening, setIsListening] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [csvPreview, setCsvPreview] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+    if (inventory.length === 0) {
+      setCsvPreview("");
+      return;
+    }
+
+    const csv = Papa.unparse(
+      inventory.map(item => ({
+        name: item.name,
+        count: item.count,
+        category: item.category || "",
+        notes: item.notes || "",
+      }))
+    );
+
+    setCsvPreview(csv);
+  }, [inventory]);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,7 +74,7 @@ export const StockCounter = () => {
             };
           });
         
-        // Fallback for CSV files without headers (single column of names)
+          // Fallback for CSV files without headers (single column of names)
         if (items.length === 0) {
           Papa.parse(file, {
             header: false,
@@ -279,6 +298,18 @@ export const StockCounter = () => {
             inventory={inventory}
             onUpdateItem={updateInventoryItem}
           />
+        )}
+
+         {/* CSV Preview */}
+        {csvPreview && (
+          <Card className="shadow-elegant">
+            <CardHeader>
+              <CardTitle className="text-wine-burgundy">CSV Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="whitespace-pre-wrap text-xs">{csvPreview}</pre>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

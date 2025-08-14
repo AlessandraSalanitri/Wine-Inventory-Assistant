@@ -164,8 +164,8 @@ export const InventoryTable = ({ inventory, onUpdateItem }: InventoryTableProps)
         {inventory.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Wine className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium mb-2">No inventory items</p>
-            <p>Import a CSV file or use voice commands to add items</p>
+            <p className="text-lg font-medium mb-2">Start speaking to add items</p>
+            <p>Say the wine name followed by the count number</p>
           </div>
         )}
       </CardContent>
